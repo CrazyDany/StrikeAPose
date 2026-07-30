@@ -40,8 +40,10 @@ function StrikeAPose:apply_pose(m, pose_id)
     if 0 then
         -- Проверка возможности установить позу
     end
-
+    
     set_mario_action(m, pose.action, pose_id)
+    smlua_anim_util_set_animation(m.marioObj, pose.animation_name)
+    set_anim_to_frame(m, 0)
 end
 
 
@@ -57,7 +59,6 @@ function SAPPose.new(name, animation_name, pose_action_flags)
     name = name or ('pose_' .. tostring(random_float()))
     animation_name = animation_name or name
 
-
     local self = setmetatable({}, SAPPose)
     self.name = name
     self.animation_name = animation_name
@@ -71,10 +72,9 @@ function SAPPose.new(name, animation_name, pose_action_flags)
         local pose = _G.StrikeAPose:get_pose(pose_id)
 
         -- логика для различных флагов
-        smlua_anim_util_set_animation(m.marioObj, pose.animation_name)
 
         if (m.controller.buttonPressed & A_BUTTON) ~= 0 then
-            set_mario_action(m, ACT_IDLE, -1)
+            set_mario_action(m, ACT_FREEFALL, -1)
         end
     end
 
