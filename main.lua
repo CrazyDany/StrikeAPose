@@ -1,0 +1,2 @@
+-- name: StrikeAPose
+-- description: allows player do their favourite poses and dances

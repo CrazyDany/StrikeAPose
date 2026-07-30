@@ -1,0 +1,7 @@
+{
+  "ignore_folders": [".vscode", "actors", "sound", "textures", ".git"],
+  "priority_folders": {"core": 0, "poses": 1},
+  "ignore_files": ["*.bak", "*.tmp"],
+  "exclude_folders": [".git", ".vscode"],
+  "exclude_files": ["*.log", "*.pyc", "desktop.ini", ".gitignore", "compile.py", "build_config.json"]
+}
