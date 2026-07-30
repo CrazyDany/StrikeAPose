@@ -44,6 +44,12 @@ function StrikeAPose:apply_pose(m, pose_id)
     set_mario_action(m, pose.action, pose_id)
     smlua_anim_util_set_animation(m.marioObj, pose.animation_name)
     set_anim_to_frame(m, 0)
+
+    m.actionTimer = 0
+    
+    if pose.hook_start ~= nil then
+        pose.hook_start(m)
+    end
 end
 
 
@@ -52,6 +58,9 @@ end
 --- @field name string
 --- @field animation_name string
 --- @field action integer
+--- @field hook_every_tick fun(m: MarioState)
+--- @field hook_start fun(m: MarioState)
+--- @field hook_end fun(m: MarioState)
 SAPPose = {}
 SAPPose.__index = SAPPose
 
@@ -75,6 +84,16 @@ function SAPPose.new(name, animation_name, pose_action_flags)
 
         if (m.controller.buttonPressed & A_BUTTON) ~= 0 then
             set_mario_action(m, ACT_FREEFALL, -1)
+            if pose.hook_end ~= nil then
+                pose.hook_end(m)
+                return
+            end
+        end
+
+        m.actionTimer = m.actionTimer + 1
+
+        if pose.hook_every_tick ~= nil then
+            pose.hook_every_tick(m)
         end
     end
 
