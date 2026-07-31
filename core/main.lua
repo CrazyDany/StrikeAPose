@@ -87,7 +87,10 @@ function SAPPose.new(name, animation_name, pose_action_flags)
         end
 
         m.actionTimer = m.actionTimer + 1
-
+        if (smlua_anim_util_get_current_animation_name(m.marioObj) ~= pose.animation_name) and (m.playerIndex ~= 0) then
+            smlua_anim_util_set_animation(m.marioObj, pose.animation_name)
+        end
+        
         if pose.hook_every_tick ~= nil then
             pose.hook_every_tick(m)
         end
