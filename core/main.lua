@@ -29,8 +29,6 @@ end
 --- @param m MarioState
 --- @param pose_id integer
 function StrikeAPose:apply_pose(m, pose_id)
-    local command_idx = tonumber(msg)
-
     local pose = self:get_pose(pose_id)
 
     if pose == nil then
@@ -46,7 +44,7 @@ function StrikeAPose:apply_pose(m, pose_id)
     set_anim_to_frame(m, 0)
 
     m.actionTimer = 0
-    
+
     if pose.hook_start ~= nil then
         pose.hook_start(m)
     end
@@ -79,8 +77,6 @@ function SAPPose.new(name, animation_name, pose_action_flags)
     function action_every_frame(m)
         local pose_id = m.actionArg
         local pose = _G.StrikeAPose:get_pose(pose_id)
-
-        -- логика для различных флагов
 
         if (m.controller.buttonPressed & A_BUTTON) ~= 0 then
             set_mario_action(m, ACT_FREEFALL, -1)
