@@ -109,7 +109,7 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
             text_y = show_panel and (panel_top - 32) or (screen_height - BOTTOM_MARGIN - 32)
 
             djui_hud_set_color(255, 255, 255, 255)
-            djui_hud_print_text(text, text_x, text_y, text_scale)
+            djui_hud_print_text(string.gsub(pose_name, '\n', ''), text_x, text_y, text_scale)
 
             if show_panel then
                 for line = 0, num_lines - 1 do
