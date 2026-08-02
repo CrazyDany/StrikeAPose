@@ -34,3 +34,39 @@ hook_chat_command('sap', 'pose_idx | integer',
         return true
     end
 )
+
+hook_chat_command('sap-slot', 'slot_idx | integer, pose_idx | integer',
+    function(msg)
+        local args = {}
+        for arg in string.gmatch(msg, '%S+') do
+            table.insert(args, arg)
+        end
+        
+        if #args < 2 then
+            djui_chat_message_create('Usage: /sap-slot <slot_idx> <pose_idx> (e.g., /sap-slot 0 5)')
+            return true
+        end
+        
+        local slot_idx = tonumber(args[1])
+        local pose_idx = tonumber(args[2])
+        
+        if not slot_idx or not pose_idx then
+            djui_chat_message_create('Invalid number format. Please use integers.')
+            return true
+        end
+        
+        if slot_idx < MIN_SLOT_IDX or slot_idx > MAX_SLOT_IDX then
+            djui_chat_message_create('Slot index must be between ' .. MIN_SLOT_IDX .. ' and ' .. MAX_SLOT_IDX .. '.')
+            return true
+        end
+        
+        local success = SavePoseSlot(slot_idx, pose_idx)
+        if success then
+            djui_chat_message_create('Pose slot ' .. slot_idx .. ' set to pose ' .. pose_idx .. ' successfully.')
+        else
+            djui_chat_message_create('Failed to save pose slot ' .. slot_idx .. '. Check console logs.')
+        end
+
+        return true
+    end
+)

@@ -14,20 +14,20 @@ hook_event(HOOK_UPDATE,
         if (m.controller.buttonDown & L_TRIG) ~= 0 then
             if (m.controller.buttonPressed & R_JPAD) ~= 0 then
                 cur_pose_slot = (cur_pose_slot + 1) % POSES_SLOTS
-                djui_chat_message_create('Selected pose -> ' .. cur_pose_slot)
+                -- djui_chat_message_create('Selected pose -> ' .. (GetPoseSlot(cur_pose_slot) or 0))
             end
 
             if (m.controller.buttonPressed & L_JPAD) ~= 0 then
                 cur_pose_slot = (cur_pose_slot - 1) % POSES_SLOTS
-                djui_chat_message_create('Selected pose -> ' .. cur_pose_slot)
+                -- djui_chat_message_create('Selected pose -> ' .. (GetPoseSlot(cur_pose_slot) or 0))
             end
         end
 
         show_panel = (m.controller.buttonDown & L_TRIG) ~= 0
 
         if (m.controller.buttonReleased & L_TRIG) ~= 0 then
-            djui_chat_message_create('Pose: ' .. cur_pose_slot)
-            _G.StrikeAPose:apply_pose(gMarioStates[0], cur_pose_slot)
+            -- djui_chat_message_create('Pose: ' .. (GetPoseSlot(cur_pose_slot) or 0))
+            _G.StrikeAPose:apply_pose(gMarioStates[0], (GetPoseSlot(cur_pose_slot) or 0))
         end
     end
 )
@@ -44,15 +44,13 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
         local total_slots_width = CELL_SIZE * poses_per_line
         local panel_width = total_slots_width + GAP * (poses_per_line + 1) + 2 * PANEL_MARGIN
 
-        -- *** Главное изменение: панель теперь по центру ***
         local panel_x = (screen_width - panel_width) / 2
 
         local line_height = CELL_SIZE + 2 * PANEL_MARGIN
         local num_lines = POSES_SLOTS / poses_per_line
         local panel_top = screen_height - BOTTOM_MARGIN - line_height * num_lines
 
-        -- Текст с названием позы
-        local pose = _G.StrikeAPose:get_pose(cur_pose_slot)
+        local pose = _G.StrikeAPose:get_pose(GetPoseSlot(cur_pose_slot) or 0)
         local text_scale = 0.5
         local pose_name = pose and pose.name or "Unknown"
         local text = "Current Pose: " .. pose_name
