@@ -9,6 +9,7 @@ local GAP = 8
 
 hook_event(HOOK_UPDATE,
     function()
+        --- @type MarioState
         local m = gMarioStates[0]
 
         if (m.controller.buttonDown & L_TRIG) ~= 0 then
@@ -26,7 +27,8 @@ hook_event(HOOK_UPDATE,
         show_panel = (m.controller.buttonDown & L_TRIG) ~= 0
 
         if (m.controller.buttonReleased & L_TRIG) ~= 0 then
-            -- djui_chat_message_create('Pose: ' .. (GetPoseSlot(cur_pose_slot) or 0))
+            if (m.action & ACT_FLAG_AIR) ~= 0 then return end
+            djui_chat_message_create('Pose: ' .. (GetPoseSlot(cur_pose_slot) or 0))
             _G.StrikeAPose:apply_pose(gMarioStates[0], (GetPoseSlot(cur_pose_slot) or 0))
         end
     end
