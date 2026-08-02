@@ -8,10 +8,16 @@ local BOTTOM_MARGIN = 16
 local GAP = 8
 
 local function get_panel_type()
+    if (SelectedCellDisplayMode or 1) == 0 then
+        return "rect"
+    end
     return "circle"
 end
 
 local function get_cell_text_type()
+    if (SelectedTextDisplayMode or 1) == 0 then
+        return 'id'
+    end
     return "name"
 end
 
