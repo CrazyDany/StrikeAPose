@@ -88,7 +88,8 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
         local pose = _G.StrikeAPose:get_pose(GetPoseSlot(cur_pose_slot) or 0)
         local text_scale = 0.5
         local pose_name = pose and pose.name or "Unknown"
-        local text = "Current Pose: " .. pose_name
+        local displayed_name = pose_name:gsub("\n", "")
+        local text = "Current Pose: " .. displayed_name
         local text_width = djui_hud_measure_text(text) * text_scale
         local text_x = (screen_width - text_width) / 2
         local text_y
@@ -109,7 +110,7 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
             text_y = show_panel and (panel_top - 32) or (screen_height - BOTTOM_MARGIN - 32)
 
             djui_hud_set_color(255, 255, 255, 255)
-            djui_hud_print_text(string.gsub(pose_name, '\n', ''), text_x, text_y, text_scale)
+            djui_hud_print_text(displayed_name, text_x, text_y, text_scale)
 
             if show_panel then
                 for line = 0, num_lines - 1 do
