@@ -13,7 +13,7 @@ hook_chat_command('sap-list', '- Display a list of available poses and their IDs
     end
 )
 
-hook_chat_command('sap', 'Play the pose at its ID [EX: /sap 1]',
+hook_chat_command('sap', 'Play the pose at its ID [EX: /sap 1 (Pose ID)]',
     function (msg)
         if (_G.StrikeAPose == nil) or (_G.strike_a_pos_loaded ~= true) then
             djui_chat_message_create('Strike-A-Pose System not found.')
@@ -35,7 +35,7 @@ hook_chat_command('sap', 'Play the pose at its ID [EX: /sap 1]',
     end
 )
 
-hook_chat_command('sap-slot', 'Set a pose ID to a certain slot [EX: /sap-slot 1 0]',
+hook_chat_command('sap-slot', 'Set a pose ID to a certain slot [EX: /sap-slot 1 (Slot) 0 (Pose ID)]',
     function(msg)
         local args = {}
         for arg in string.gmatch(msg, '%S+') do
