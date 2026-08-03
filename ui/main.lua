@@ -70,7 +70,6 @@ hook_event(HOOK_UPDATE,
         if (m.controller.buttonReleased & L_TRIG) ~= 0 then
             if (m.action & ACT_FLAG_AIR) ~= 0 then return end
             local pose_idx = GetPoseSlot(cur_pose_slot) or 0
-            djui_chat_message_create('Pose: ' .. pose_idx)
             _G.StrikeAPose:apply_pose(gMarioStates[0], pose_idx)
         end
     end
@@ -110,7 +109,7 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
             text_y = show_panel and (panel_top - 32) or (screen_height - BOTTOM_MARGIN - 32)
 
             djui_hud_set_color(255, 255, 255, 255)
-            djui_hud_print_text(displayed_name, text_x, text_y, text_scale)
+            djui_hud_print_text(text, text_x, text_y, text_scale)
 
             if show_panel then
                 for line = 0, num_lines - 1 do
@@ -150,7 +149,7 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
             end
 
         elseif panel_type == "circle" then
-            text_y = show_panel and 32 or (screen_height - BOTTOM_MARGIN - 32)
+            text_y = screen_height - BOTTOM_MARGIN - 32
 
             djui_hud_set_color(255, 255, 255, 255)
             djui_hud_print_text(text, text_x, text_y, text_scale)
@@ -165,8 +164,11 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND,
                 local panel_x = center_x - panel_size / 2
                 local panel_y = center_y - panel_size / 2
 
+                local pose_circle = get_texture_info("pose_circle")
+
                 djui_hud_set_color(0, 0, 0, 150)
-                djui_hud_render_rect(panel_x, panel_y, panel_size, panel_size)
+                -- djui_hud_render_rect(panel_x, panel_y, panel_size, panel_size)
+                djui_hud_render_texture(pose_circle, panel_x, panel_y, 0.7144 * panel_size/731.625, 0.7144 * panel_size/731.625)
 
                 for slot_index = 0, POSES_SLOTS - 1 do
                     local angle = (slot_index / POSES_SLOTS) * 2 * math.pi - math.pi / 2
