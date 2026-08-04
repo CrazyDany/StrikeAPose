@@ -1,6 +1,6 @@
 ## Development
 
-"Strike-A-Pos" uses a custom Python-based compiler. To modify the mod's core, you will need to set up the compiler in your IDE. We provide the compiler plugin and a sample config file; all other development environment configurations are up to the user. For details on compiler settings and features, please refer to the compiler file itself or its dedicated repository (a link will be added here if it is released separately).
+"Strike-A-Pose!" uses a custom Python-based compiler. To modify the mod's core, you will need to set up the compiler in your IDE. We provide the compiler plugin and a sample config file; all other development environment configurations are up to the user. For details on compiler settings and features, please refer to the compiler file itself or its dedicated repository (a link will be added here if it is released separately).
 
 However, developing add-ons does not require modifying the mod's core. You can easily add custom poses using the provided API, even from separate mods. For more information, please refer to the Wiki in this repository, where you will also find the full, up-to-date API documentation.
 
