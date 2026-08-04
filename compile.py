@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Компилятор мода для SM64CoopDX.
-Поддерживает:
-- преобразование вложенных папок в плоскую структуру с подчёркиваниями,
-- игнорируемые папки (копируются как есть),
-- приоритетные папки (добавляют числовой префикс для порядка загрузки),
-- исключаемые папки и файлы (полностью игнорируются, не копируются).
+Mod compiler for SM64CoopDX.
+Supports:
+- conversion of nested folders into a flat structure with underscores,
+- ignored folders (copied as-is),
+- priority folders (add numeric prefix for load order),
+- excluded folders and files (completely ignored, not copied).
 """
 
 import os
@@ -26,7 +26,7 @@ def load_config(config_path):
 
 
 def on_rmtree_error(func, path, exc_info):
-    """Обработчик ошибок для shutil.rmtree: снимает атрибут 'только для чтения' и повторяет попытку."""
+    """Error handler for shutil.rmtree: removes read-only attribute and retries."""
     if not os.access(path, os.W_OK):
         os.chmod(path, stat.S_IWUSR)
         func(path)
@@ -73,7 +73,7 @@ def get_priority_for_path(rel_path, priority_folders):
 
 
 def should_exclude(rel_path, exclude_folders, exclude_files):
-    """Проверяет, должен ли элемент (файл или папка) быть полностью исключён."""
+    """Checks if an item (file or folder) should be completely excluded."""
     if not exclude_folders and not exclude_files:
         return False
     parts = rel_path.split(os.sep)
@@ -101,31 +101,31 @@ def should_ignore_file(rel_path, ignore_patterns):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Компиляция мода для SM64CoopDX из рабочей области."
+        description="Compile a mod for SM64CoopDX from a workspace."
     )
     parser.add_argument(
         '--source', '-s',
         required=True,
-        help="Путь к рабочей области (исходная папка мода)"
+        help="Path to the workspace (source mod folder)"
     )
     parser.add_argument(
         '--target', '-t',
         required=True,
-        help="Путь к папке mods в билде SM64CoopDX (например, ./mods/MyMod)"
+        help="Path to the mods folder in the SM64CoopDX build (e.g., ./mods/MyMod)"
     )
     parser.add_argument(
         '--config', '-c',
-        help="Путь к JSON-конфигу (если не указан, ищется build_config.json в исходной папке)"
+        help="Path to JSON config (if not specified, looks for build_config.json in source folder)"
     )
     parser.add_argument(
         '--clean',
         action='store_true',
-        help="Удалить целевую папку перед копированием"
+        help="Delete target folder before copying"
     )
     parser.add_argument(
         '--verbose', '-v',
         action='store_true',
-        help="Выводить подробный лог"
+        help="Print detailed log"
     )
     args = parser.parse_args()
 
@@ -133,10 +133,10 @@ def main():
     dst_root = os.path.abspath(args.target)
 
     if not os.path.isdir(src_root):
-        print(f"Ошибка: исходная папка '{src_root}' не существует.")
+        print(f"Error: source folder '{src_root}' does not exist.")
         sys.exit(1)
 
-    # Конфиг
+    # Config
     if args.config:
         config_path = args.config
     else:
@@ -150,12 +150,12 @@ def main():
     exclude_files = config.get('exclude_files', [])
 
     if args.verbose:
-        print(f"Конфиг загружен: {config_path}")
-        print(f"Игнорируемые папки (копируются как есть): {ignore_folders}")
-        print(f"Приоритетные папки: {priority_folders}")
-        print(f"Игнорируемые файлы (не копируются): {ignore_patterns}")
-        print(f"Исключаемые папки (полностью пропускаются): {exclude_folders}")
-        print(f"Исключаемые файлы (полностью пропускаются): {exclude_files}")
+        print(f"Config loaded: {config_path}")
+        print(f"Ignored folders (copied as-is): {ignore_folders}")
+        print(f"Priority folders: {priority_folders}")
+        print(f"Ignored files (not copied): {ignore_patterns}")
+        print(f"Excluded folders (completely skipped): {exclude_folders}")
+        print(f"Excluded files (completely skipped): {exclude_files}")
 
     if args.clean and os.path.exists(dst_root):
         shutil.rmtree(dst_root, onerror=on_rmtree_error)
@@ -173,14 +173,14 @@ def main():
 
         if rel_root and should_exclude(rel_root, exclude_folders, []):
             if args.verbose:
-                print(f"Исключена папка: {rel_root}")
+                print(f"Excluded folder: {rel_root}")
             excluded_count += 1
             continue
 
         if rel_root and is_path_in_ignored(rel_root, ignore_folders):
             copy_ignored_folder(src_root, rel_root, dst_root, rel_root)
             if args.verbose:
-                print(f"Скопирована игнорируемая папка: {rel_root}")
+                print(f"Copied ignored folder: {rel_root}")
             continue
 
         for file in files:
@@ -189,13 +189,13 @@ def main():
 
             if should_exclude(rel_file, [], exclude_files):
                 if args.verbose:
-                    print(f"Исключён файл: {rel_file}")
+                    print(f"Excluded file: {rel_file}")
                 excluded_count += 1
                 continue
 
             if should_ignore_file(rel_file, ignore_patterns):
                 if args.verbose:
-                    print(f"Игнорируется файл: {rel_file}")
+                    print(f"Ignoring file: {rel_file}")
                 ignored_count += 1
                 continue
 
@@ -206,10 +206,10 @@ def main():
             shutil.copy2(src_file, dst_file)
             copied_count += 1
             if args.verbose:
-                print(f"Скопирован: {rel_file} -> {new_name}")
+                print(f"Copied: {rel_file} -> {new_name}")
 
-    print(f"Сборка завершена. Скопировано: {copied_count}, игнорировано: {ignored_count}, исключено: {excluded_count}")
-    print(f"Мод собран в {dst_root}")
+    print(f"Build completed. Copied: {copied_count}, ignored: {ignored_count}, excluded: {excluded_count}")
+    print(f"Mod built to {dst_root}")
 
 
 if __name__ == "__main__":
