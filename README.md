@@ -1,4 +1,8 @@
+<img width="1920" height="1080" alt="strike-a-pose logo" src="https://github.com/user-attachments/assets/036af8fd-e727-4553-bf20-3a22c507ea9f" />
+
+
 ## Development
+
 
 "Strike-A-Pose!" uses a custom Python-based compiler. To modify the mod's core, you will need to set up the compiler in your IDE. We provide the compiler plugin and a sample config file; all other development environment configurations are up to the user. For details on compiler settings and features, please refer to the compiler file itself or its dedicated repository (a link will be added here if it is released separately).
 
