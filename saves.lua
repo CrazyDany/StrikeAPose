@@ -60,35 +60,37 @@ function GetPoseSlotsCount()
     return MAX_SLOT_IDX - MIN_SLOT_IDX + 1
 end
 
--- Загрузка сохранений
-local loaded_count = 0
-for i = MIN_SLOT_IDX, MAX_SLOT_IDX do
-    local storage_key = GetStorageKey(i)
-    if mod_storage_exists(storage_key) then
-        local name = mod_storage_load(storage_key)
-        if name ~= nil and name ~= "" then
-            local found_id = nil
-            for id, pose in ipairs(_G.StrikeAPose:list_poses()) do
-                if pose.name == name then
-                    found_id = id
-                    break
+hook_event(HOOK_ON_MODS_LOADED, function()
+    -- Загрузка сохранений
+    local loaded_count = 0
+    for i = MIN_SLOT_IDX, MAX_SLOT_IDX do
+        local storage_key = GetStorageKey(i)
+        if mod_storage_exists(storage_key) then
+            local name = mod_storage_load(storage_key)
+            if name ~= nil and name ~= "" then
+                local found_id = nil
+                for id, pose in ipairs(_G.StrikeAPose:list_poses()) do
+                    if pose.name == name then
+                        found_id = id
+                        break
+                    end
                 end
-            end
-            if found_id ~= nil then
-                poses_slots_saved[i] = found_id
-                loaded_count = loaded_count + 1
-                log_to_console('Slot ' .. i .. ' loaded with pose name: ' .. name .. ' (ID ' .. found_id .. ')')
+                if found_id ~= nil then
+                    poses_slots_saved[i] = found_id
+                    loaded_count = loaded_count + 1
+                    log_to_console('Slot ' .. i .. ' loaded with pose name: ' .. name .. ' (ID ' .. found_id .. ')')
+                else
+                    log_to_console('Slot ' .. i .. ' has saved pose name "' .. name .. '" but no such pose found. Slot left empty.', CONSOLE_MESSAGE_WARNING)
+                    poses_slots_saved[i] = nil
+                end
             else
-                log_to_console('Slot ' .. i .. ' has saved pose name "' .. name .. '" but no such pose found. Slot left empty.', CONSOLE_MESSAGE_WARNING)
+                log_to_console('Slot ' .. i .. ' storage key exists but load returned nil/empty. Slot left empty.', CONSOLE_MESSAGE_WARNING)
                 poses_slots_saved[i] = nil
             end
         else
-            log_to_console('Slot ' .. i .. ' storage key exists but load returned nil/empty. Slot left empty.', CONSOLE_MESSAGE_WARNING)
             poses_slots_saved[i] = nil
         end
-    else
-        poses_slots_saved[i] = nil
     end
-end
 
-log_to_console('StrikeAPose saves loaded: ' .. loaded_count .. ' slots loaded from storage, others left empty.')
+    log_to_console('StrikeAPose saves loaded: ' .. loaded_count .. ' slots loaded from storage, others left empty.')
+end)
