@@ -110,3 +110,13 @@ _G.SAPPose = SAPPose
 
 log_to_console('StrikeAPose ' .. _G.StrikeAPose.version .. ' loaded', CONSOLE_MESSAGE_INFO)
 djui_popup_create('StrikeAPose ' .. _G.StrikeAPose.version .. ' loaded', 3)
+
+local should_show_message = true
+hook_event(HOOK_UPDATE, 
+    function()
+        if should_show_message then
+            djui_chat_message_create('StrikeAPose Loaded!\n\nNow you can Hold L-Trig + D-Pad Left/Right to select and strike a pose, or just press L-Trig to strike the current pose.\n\nType /help for more info on settings and controls.')
+            should_show_message = false
+        end
+    end
+)
