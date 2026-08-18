@@ -57,8 +57,12 @@ end
 
 hook_event(HOOK_UPDATE,
     function()
+        --- @type MarioState
         local m = gMarioStates[0]
         if not m then return end
+
+        if m.area.camera == nil then return end
+        if (m.area.camera.cutscene ~= 0) then return end
 
         local total_poses = 0
         if _G.StrikeAPose and _G.StrikeAPose.poses then
@@ -131,7 +135,7 @@ hook_event(HOOK_UPDATE,
         end
 
         if l_trig_released then
-            if (m.action & ACT_FLAG_AIR) == 0 then
+            if (m.action & ACT_FLAG_AIR == 0) and (m.action & ACT_FLAG_WATER_OR_TEXT == 0) then
                 local pose_id = 0
                 if current_page == 0 then
                     pose_id = GetPoseSlot(cur_pose_slot) or 0
