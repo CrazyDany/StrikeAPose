@@ -5,6 +5,8 @@ local current_page = 0
 local selected_all_pose_idx = 1
 local show_panel = false
 
+local l_trigger_hold_counter = 0
+
 local CELL_SIZE = 64
 local PANEL_MARGIN = 16
 local BOTTOM_MARGIN = 16
@@ -55,7 +57,6 @@ end
 
 hook_event(HOOK_UPDATE,
     function()
-        --- @type MarioState
         local m = gMarioStates[0]
         if not m then return end
 
@@ -71,8 +72,19 @@ hook_event(HOOK_UPDATE,
         if current_page > num_all_pages then current_page = num_all_pages end
         if current_page < 0 then current_page = 0 end
 
-        if (m.controller.buttonDown & L_TRIG) ~= 0 then
+        local l_trig_pressed = (m.controller.buttonDown & L_TRIG) ~= 0
+        local l_trig_released = (m.controller.buttonReleased & L_TRIG) ~= 0
 
+        if l_trig_pressed then
+            l_trigger_hold_counter = math.min(l_trigger_hold_counter + 1, 4)
+        else
+            l_trigger_hold_counter = 0
+        end
+
+        local is_held_long = l_trigger_hold_counter >= 4
+        show_panel = is_held_long
+
+        if is_held_long then
             if (m.controller.buttonPressed & U_JPAD) ~= 0 then
                 if num_all_pages > 0 then
                     current_page = (current_page + 1) % (num_all_pages + 1)
@@ -118,21 +130,21 @@ hook_event(HOOK_UPDATE,
             end
         end
 
-        show_panel = (m.controller.buttonDown & L_TRIG) ~= 0
-
-        if (m.controller.buttonReleased & L_TRIG) ~= 0 then
-            if (m.action & ACT_FLAG_AIR) ~= 0 then return end
-            local pose_id = 0
-            if current_page == 0 then
-                pose_id = GetPoseSlot(cur_pose_slot) or 0
-            else
-                if selected_all_pose_idx >= 1 and selected_all_pose_idx <= total_poses then
-                    pose_id = selected_all_pose_idx
+        if l_trig_released then
+            if (m.action & ACT_FLAG_AIR) == 0 then
+                local pose_id = 0
+                if current_page == 0 then
+                    pose_id = GetPoseSlot(cur_pose_slot) or 0
+                else
+                    if selected_all_pose_idx >= 1 and selected_all_pose_idx <= total_poses then
+                        pose_id = selected_all_pose_idx
+                    end
+                end
+                if pose_id ~= 0 and _G.StrikeAPose then
+                    _G.StrikeAPose:apply_pose(m, pose_id)
                 end
             end
-            if pose_id ~= 0 and _G.StrikeAPose then
-                _G.StrikeAPose:apply_pose(m, pose_id)
-            end
+            l_trigger_hold_counter = 0
         end
     end
 )
