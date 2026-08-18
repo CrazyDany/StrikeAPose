@@ -13,7 +13,7 @@ hook_chat_command('sap-list', '- Display a list of available poses and their IDs
     end
 )
 
-hook_chat_command('sap', 'Play a pose by ID or name [EX: /sap 1 or /sap "dance"]',
+hook_chat_command('sap', 'Play a pose by ID [EX: /sap 1]',
     function (msg)
         if (_G.StrikeAPose == nil) or (_G.strike_a_pos_loaded ~= true) then
             djui_chat_message_create('Strike-A-Pose System not found.')
@@ -22,7 +22,7 @@ hook_chat_command('sap', 'Play a pose by ID or name [EX: /sap 1 or /sap "dance"]
 
         local arg = msg
         if arg == nil or arg == "" then
-            djui_chat_message_create('Usage: /sap <pose_id_or_name> (e.g., /sap 5 or /sap "dance")')
+            djui_chat_message_create('Usage: /sap <pose_id> (e.g., /sap 5)')
             return true
         end
 
@@ -55,7 +55,7 @@ hook_chat_command('sap', 'Play a pose by ID or name [EX: /sap 1 or /sap "dance"]
     end
 )
 
-hook_chat_command('sap-slot', 'Set a pose to a certain slot by ID or name [EX: /sap-slot 0 5 or /sap-slot 0 "pose_name"]',
+hook_chat_command('sap-slot', 'Set a pose to a certain slot by ID [EX: /sap-slot 0 (Slot) 5 (Pose ID)]',
     function(msg)
         local args = {}
         for arg in string.gmatch(msg, '%S+') do
@@ -63,7 +63,7 @@ hook_chat_command('sap-slot', 'Set a pose to a certain slot by ID or name [EX: /
         end
         
         if #args < 2 then
-            djui_chat_message_create('Usage: /sap-slot <slot_idx> <pose_id_or_name> (e.g., /sap-slot 0 5 or /sap-slot 0 "dance")')
+            djui_chat_message_create('Usage: /sap-slot <slot_idx> <pose_id> (e.g., /sap-slot 0 5)')
             return true
         end
         
