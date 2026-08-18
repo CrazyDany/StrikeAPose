@@ -63,6 +63,7 @@ hook_event(HOOK_UPDATE,
 
         if m.area.camera == nil then return end
         if (m.area.camera.cutscene ~= 0) then return end
+        if m.action == ACT_IN_CANNON then return end
 
         local total_poses = 0
         if _G.StrikeAPose and _G.StrikeAPose.poses then
