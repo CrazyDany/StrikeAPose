@@ -108,14 +108,14 @@ _G.strike_a_pos_loaded = true
 _G.StrikeAPose = StrikeAPose
 _G.SAPPose = SAPPose
 
-log_to_console('StrikeAPose ' .. _G.StrikeAPose.version .. ' loaded', CONSOLE_MESSAGE_INFO)
-djui_popup_create('StrikeAPose ' .. _G.StrikeAPose.version .. ' loaded', 3)
+log_to_console('Strike-A-Pose! ' .. _G.StrikeAPose.version .. ' loaded', CONSOLE_MESSAGE_INFO)
+djui_popup_create('Strike-A-Pose! ' .. _G.StrikeAPose.version .. ' loaded', 3)
 
 local should_show_message = true
 hook_event(HOOK_UPDATE, 
     function()
         if should_show_message then
-            djui_chat_message_create('StrikeAPose Loaded!\n\nNow you can Hold L-Trig + D-Pad Left/Right to select and strike a pose, or just press L-Trig to strike the current pose.\n\nType /help for more info on settings and controls.')
+            djui_chat_message_create('\\#99BBEE\\Strike-A-Pose!\\#FFFFFF\\ loaded!\n\nNow you can Hold \\#FFC401\\L-Trig + D-Pad Left/Right\\#FFFFFF\\ to select and strike a pose, or just press \\#FFC401\\L-Trig\\#FFFFFF\\ to strike the current pose.\n\nType \\#FFFF33\\/help\\#FFFFFF\\ for more info on settings and controls.')
             should_show_message = false
         end
     end

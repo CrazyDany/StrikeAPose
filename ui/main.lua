@@ -1,5 +1,5 @@
 POSES_SLOTS = 10
-POSES_PER_PAGE = 10
+POSES_PER_PAGE = 16
 local cur_pose_slot = 0
 local current_page = 0
 local selected_all_pose_idx = 1
