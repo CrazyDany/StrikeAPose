@@ -50,8 +50,6 @@ function StrikeAPose:apply_pose(m, pose_id)
     end
 end
 
-
-
 --- @class SAPPose
 --- @field name string
 --- @field animation_name string
