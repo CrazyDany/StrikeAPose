@@ -16,8 +16,8 @@ Plans for the project are pretty ambitious, but please keep in mind that these a
 - [x] UI framework
 - [ ] 30 built-in poses
 - [ ] Coop-poses (2, 3+ players)
-- [ ] Poses with custom objects
-- [ ] Interactive poses (movement, randomizers, choosing, etc.)
+- [x] Poses with custom objects
+- [x] Interactive poses (movement, randomizers, choosing, etc.)
 - [ ] Custom sounds, music and effects for poses
 - [ ] Full UI and Control customization
 - [ ] Better mobile support
