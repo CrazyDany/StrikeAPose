@@ -151,6 +151,238 @@ function mario_get_velocity_yaw(m)
     return mario_direction_to_binary_yaw(m.vel.x, m.vel.z)
 end
 
+local id_bhvPoseMesh = hook_behavior(
+    nil, OBJ_LIST_GENACTOR, true,
+    function(o)
+        o.oFlags = OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE
+        o.oIntangibleTimer = -1
+        o.oOpacity = 255
+    end,
+    function(o)
+        local life = (o.oDamageOrCoinValue or 1) - 1
+        if life <= 0 then
+            obj_mark_for_deletion(o)
+        else
+            o.oDamageOrCoinValue = life
+        end
+    end,
+    "PoseMesh"
+)
+
+--- @param m MarioState
+--- @param wx number
+--- @param wy number
+--- @param wz number
+--- @return table
+local function world_to_local_offset(m, wx, wy, wz)
+    local dx, dy, dz = wx - m.pos.x, wy - m.pos.y, wz - m.pos.z
+    local cosA, sinA = coss(m.faceAngle.y), sins(m.faceAngle.y)
+    return {
+        x =  dx * cosA + dz * sinA,
+        y = dy,
+        z = -dx * sinA + dz * cosA,
+    }
+end
+
+local HAND_LEFT, HAND_RIGHT = 0, 1
+local FOOT_LEFT, FOOT_RIGHT = 2, 3
+
+--- @type table<string, {pos?: table, pos_fn?: fun(m: MarioState): table, rot_fn?: fun(m: MarioState): table}>
+local BODY_ANCHORS = {
+    root = { pos = { x = 0, y = 0, z = 0 } },
+
+    torso = {
+        pos_fn = function(m)
+            local tp = m.marioBodyState.torsoPos
+            return world_to_local_offset(m, tp.x, tp.y, tp.z)
+        end,
+    },
+
+    head = {
+        pos_fn = function(m)
+            local hp = m.marioBodyState.headPos
+            return world_to_local_offset(m, hp.x, hp.y, hp.z)
+        end,
+    },
+
+    left_hand = {
+        pos_fn = function(m)
+            return world_to_local_offset(m,
+                get_hand_foot_pos_x(m, HAND_LEFT),
+                get_hand_foot_pos_y(m, HAND_LEFT),
+                get_hand_foot_pos_z(m, HAND_LEFT))
+        end,
+    },
+
+    right_hand = {
+        pos_fn = function(m)
+            return world_to_local_offset(m,
+                get_hand_foot_pos_x(m, HAND_RIGHT),
+                get_hand_foot_pos_y(m, HAND_RIGHT),
+                get_hand_foot_pos_z(m, HAND_RIGHT))
+        end,
+    },
+
+    left_foot = {
+        pos_fn = function(m)
+            return world_to_local_offset(m,
+                get_hand_foot_pos_x(m, FOOT_LEFT),
+                get_hand_foot_pos_y(m, FOOT_LEFT),
+                get_hand_foot_pos_z(m, FOOT_LEFT))
+        end,
+    },
+
+    right_foot = {
+        pos_fn = function(m)
+            return world_to_local_offset(m,
+                get_hand_foot_pos_x(m, FOOT_RIGHT),
+                get_hand_foot_pos_y(m, FOOT_RIGHT),
+                get_hand_foot_pos_z(m, FOOT_RIGHT))
+        end,
+    },
+
+    front = { pos = { x = 0, y = 60, z = 40 } },
+    back  = { pos = { x = 0, y = 60, z = -40 }, yaw = 0x8000 },
+}
+
+local ZERO_OFFSET = { x = 0, y = 0, z = 0 }
+
+--- @param m MarioState
+--- @param name string|nil
+--- @return table pos, number yaw
+local function resolve_anchor(m, name)
+    if name == nil then return ZERO_OFFSET, 0 end
+    local a = BODY_ANCHORS[name]
+    if a == nil then return ZERO_OFFSET, 0 end
+
+    local p
+    if a.pos_fn ~= nil then
+        p = a.pos_fn(m)
+    elseif a.pos ~= nil then
+        p = a.pos
+    else
+        p = ZERO_OFFSET
+    end
+    return p, a.yaw or 0
+end
+
+--- @param opts table
+--- @return Object|nil
+local function spawn_pose_mesh(opts)
+    if not opts or opts.model == nil then return nil end
+    local pos = opts.pos or { x = 0, y = 0, z = 0 }
+
+    return spawn_non_sync_object(id_bhvPoseMesh, opts.model,
+        pos.x, pos.y, pos.z,
+        function(o)
+            o.oFaceAnglePitch = opts.pitch or 0
+            o.oFaceAngleYaw   = opts.yaw   or 0
+            o.oFaceAngleRoll  = opts.roll  or 0
+
+            local s = opts.scale or 1
+            if type(s) == "number" then
+                o.header.gfx.scale.x = s
+                o.header.gfx.scale.y = s
+                o.header.gfx.scale.z = s
+            else
+                o.header.gfx.scale.x = s.x or 1
+                o.header.gfx.scale.y = s.y or 1
+                o.header.gfx.scale.z = s.z or 1
+            end
+
+            local ai = o.header.gfx.animInfo
+            if opts.animID    ~= nil then ai.animID    = opts.animID    end
+            if opts.curAnim   ~= nil then ai.curAnim   = opts.curAnim   end
+            if opts.animYTrans ~= nil then ai.animYTrans = opts.animYTrans end
+            local frame = opts.animFrame or 0
+            ai.animFrame = frame
+            ai.animFrameAccelAssist = frame * 0x10000
+            ai.animAccel = 0
+            ai.animTimer = 0
+
+            o.oOpacity = opts.opacity or 255
+            o.oDamageOrCoinValue = opts.lifetime or 1
+        end
+    )
+end
+
+--- @param m MarioState
+--- @return table
+local function mario_capture_snapshot(m)
+    local gfx = m.marioObj.header.gfx
+    local ai  = gfx.animInfo
+    return {
+        model = obj_get_model_id_extended(m.marioObj),
+        pos = { x = m.pos.x, y = m.pos.y, z = m.pos.z },
+        yaw = gfx.angle.y,
+        pitch = gfx.angle.x,
+        roll = gfx.angle.z,
+        scale = { x = gfx.scale.x, y = gfx.scale.y, z = gfx.scale.z },
+        animID = ai.animID,
+        curAnim = ai.curAnim,
+        animYTrans = m.unkB0 or 0,
+        animFrame = ai.animFrame,
+        opacity = 255,
+        lifetime = 1,
+    }
+end
+
+--- @param snap table
+--- @param overrides table|nil
+--- @return Object|nil
+local function spawn_snapshot_mesh(snap, overrides)
+    if not snap then return nil end
+    overrides = overrides or {}
+
+    local function pick(field)
+        local v = overrides[field]
+        if v == nil then v = snap[field] end
+        return v
+    end
+
+    return spawn_pose_mesh({
+        model = pick("model"),
+        pos = pick("pos"),
+        yaw = pick("yaw"),
+        pitch = pick("pitch"),
+        roll = pick("roll"),
+        scale = pick("scale"),
+        animID = pick("animID"),
+        curAnim = pick("curAnim"),
+        animYTrans = pick("animYTrans"),
+        animFrame = pick("animFrame"),
+        opacity = overrides.opacity  or snap.opacity  or 255,
+        lifetime = overrides.lifetime or snap.lifetime or 1,
+    })
+end
+
+--- @param m MarioState
+--- @param opts table
+--- @return Object|nil
+local function spawn_mesh_at_offset(m, opts)
+    opts = opts or {}
+    local off = opts.offset or { x = 0, y = 0, z = 0 }
+    local anchor_off, anchor_yaw = resolve_anchor(m, opts.anchor)
+
+    local lx = anchor_off.x + off.x
+    local ly = anchor_off.y + off.y
+    local lz = anchor_off.z + off.z
+
+    local cosA, sinA = coss(m.faceAngle.y), sins(m.faceAngle.y)
+    local wx = lx * cosA - lz * sinA
+    local wz = lx * sinA + lz * cosA
+
+    opts.pos = {
+        x = m.pos.x + wx,
+        y = m.pos.y + ly,
+        z = m.pos.z + wz,
+    }
+    if opts.yaw == nil then
+        opts.yaw = (m.faceAngle.y + anchor_yaw) % BINARY_ANGLE_MAX
+    end
+    return spawn_pose_mesh(opts)
+end
+
 _G.sp_pose_builder = {
     mario_get_camera_yaw = mario_get_camera_yaw,
     mario_get_stick_world_direction = mario_get_stick_world_direction,
@@ -164,4 +396,10 @@ _G.sp_pose_builder = {
     mario_is_grounded = mario_is_grounded,
     mario_is_airborne = mario_is_airborne,
     mario_get_velocity_yaw = mario_get_velocity_yaw,
+    world_to_local_offset = world_to_local_offset,
+    spawn_pose_mesh = spawn_pose_mesh,
+    mario_capture_snapshot = mario_capture_snapshot,
+    spawn_snapshot_mesh = spawn_snapshot_mesh,
+    spawn_mesh_at_offset = spawn_mesh_at_offset,
+    body_anchors = BODY_ANCHORS,
 }
