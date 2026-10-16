@@ -188,6 +188,21 @@ function StrikeAPose:get_coop_ctx(m)
     return nil
 end
 
+--- @param session_id integer  -- leader gpi
+--- @param slot integer        -- 0 = leader, 1.. = participants
+--- @return MarioState|nil
+function StrikeAPose:get_session_mario(session_id, slot)
+    if slot == 0 then
+        return find_mario_by_gpi(session_id)
+    end
+    for _, gpi in ipairs(iter_active_gpis()) do
+        if get_member_leader(gpi) == session_id and get_member_slot(gpi) == slot then
+            return find_mario_by_gpi(gpi)
+        end
+    end
+    return nil
+end
+
 --- @param m MarioState
 --- @param pose_id integer
 --- @return boolean
