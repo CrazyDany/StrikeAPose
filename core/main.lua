@@ -330,6 +330,7 @@ local function enter_pose_animation(m, pose)
     if pose._anim_status == false then return end
 
     smlua_anim_util_set_animation(m.marioObj, anim_name)
+    set_mario_anim_with_accel(m, m.marioObj.header.gfx.animInfo.animID, 0)
     set_anim_to_frame(m, 0)
 
     if pose._anim_status == nil then
@@ -354,10 +355,23 @@ function StrikeAPose:apply_pose(m, pose_id)
         self:start_coop_session(m, pose_id)
     end
 
-    set_mario_action(m, pose.action, pose_id)
-    m.actionTimer = 0
+    if m.action == pose.action then
+        m.actionTimer = 0
+        m.actionState = 0
+        m.actionArg   = pose_id
 
-    djui_chat_message_create('poseapply')
+        if not is_no_animation(pose.animation_name) then
+            smlua_anim_util_set_animation(m.marioObj, pose.animation_name)
+            set_mario_anim_with_accel(m, m.marioObj.header.gfx.animInfo.animID, 0)
+            set_anim_to_frame(m, 0)
+        end
+
+        last_pose_state[m.playerIndex] = nil
+    else
+        set_mario_action(m, pose.action, pose_id)
+        m.actionTimer = 0
+    end
+
     return true
 end
 
