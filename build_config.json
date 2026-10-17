@@ -1,5 +1,5 @@
 {
-  "ignore_folders": [".vscode", "actors", "sound", "textures", ".git"],
+  "ignore_folders": [".vscode", "actors", "sound", "textures", ".git", "libs"],
   "priority_folders": {"core": 0, "poses": 1},
   "ignore_files": ["*.bak", "*.tmp"],
   "exclude_folders": [".git", ".vscode"],

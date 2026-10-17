@@ -1,116 +1,114 @@
-hook_chat_command('sap-list', '- Display a list of available poses and their IDs.',
-    function (msg)
-        if (_G.StrikeAPose == nil) or (_G.strike_a_pos_loaded ~= true) then
-            djui_chat_message_create('StrikeAPose System not found.')
-            return true
+local BCC = require('libs/better-commands-lib')
+
+local function sap_available()
+    return (_G.StrikeAPose ~= nil) and (_G.strike_a_pos_loaded == true)
+end
+
+--- Resolve a pose identifier (numeric ID or exact name) into a pose ID.
+--- @param arg string|nil
+--- @return integer|nil pose_id
+--- @return string|nil err
+local function resolve_pose(arg)
+    if arg == nil or arg == "" then
+        return nil, "Pose ID or name is required."
+    end
+
+    local num = tonumber(arg)
+    if num ~= nil then
+        local pose = _G.StrikeAPose:get_pose(num)
+        if pose == nil then
+            return nil, 'Pose with ID ' .. num .. ' does not exist.'
+        end
+        return num
+    end
+
+    for id, pose in ipairs(_G.StrikeAPose:list_poses()) do
+        if pose.name == arg then
+            return id
+        end
+    end
+
+    return nil, 'Pose with name "' .. arg .. '" not found.'
+end
+
+BCC.hook_better_chat_command('sap-list',
+    'Display a list of available poses and their IDs.',
+    {},
+    function()
+        if not sap_available() then
+            BCC.chat_create_error('Strike-A-Pose system not found.')
+            return
         end
 
-        for _, pose in ipairs(_G.StrikeAPose:list_poses()) do
-            djui_chat_message_create('[' .. _ .. ']' .. ' - ' .. pose.name)
+        local poses = _G.StrikeAPose:list_poses()
+        if #poses == 0 then
+            BCC.chat_create_warning('No poses registered yet.')
+            return
         end
 
-        return true
+        for id, pose in ipairs(poses) do
+            djui_chat_message_create('[' .. id .. '] - ' .. pose.name)
+        end
     end
 )
 
-hook_chat_command('sap', 'Play a pose by ID [EX: /sap 1]',
-    function (msg)
-        if (_G.StrikeAPose == nil) or (_G.strike_a_pos_loaded ~= true) then
-            djui_chat_message_create('Strike-A-Pose System not found.')
-            return true
+BCC.hook_better_chat_command('sap',
+    'Play a pose by ID or name. Example: /sap 5  |  /sap, Walking',
+    {
+        { "pose", BCC.CMD_ARG_STRING_REST },
+    },
+    function(args)
+        if not sap_available() then
+            BCC.chat_create_error('Strike-A-Pose system not found.')
+            return
         end
 
-        local arg = msg
-        if arg == nil or arg == "" then
-            djui_chat_message_create('Usage: /sap <pose_id> (e.g., /sap 5)')
-            return true
-        end
-
-        local pose_id = nil
-        local num = tonumber(arg)
-        if num ~= nil then
-            local pose = _G.StrikeAPose:get_pose(num)
-            if pose == nil then
-                djui_chat_message_create('Pose with ID ' .. num .. ' does not exist.')
-                return true
-            end
-            pose_id = num
-        else
-            local found = nil
-            for id, pose in ipairs(_G.StrikeAPose:list_poses()) do
-                if pose.name == arg then
-                    found = id
-                    break
-                end
-            end
-            if found == nil then
-                djui_chat_message_create('Pose with name "' .. arg .. '" not found.')
-                return true
-            end
-            pose_id = found
+        local pose_id, err = resolve_pose(args.pose)
+        if not pose_id then
+            BCC.chat_create_error(err)
+            return
         end
 
         _G.StrikeAPose:apply_pose(gMarioStates[0], pose_id)
-        return true
     end
 )
 
-hook_chat_command('sap-slot', 'Set a pose to a certain slot by ID [EX: /sap-slot 0 (Slot) 5 (Pose ID)]',
-    function(msg)
-        local args = {}
-        for arg in string.gmatch(msg, '%S+') do
-            table.insert(args, arg)
-        end
-        
-        if #args < 2 then
-            djui_chat_message_create('Usage: /sap-slot <slot_idx> <pose_id> (e.g., /sap-slot 0 5)')
-            return true
-        end
-        
-        local slot_idx = tonumber(args[1])
-        if not slot_idx then
-            djui_chat_message_create('Invalid slot index. Must be a number.')
-            return true
-        end
-        
-        if slot_idx < MIN_SLOT_IDX or slot_idx > MAX_SLOT_IDX then
-            djui_chat_message_create('Slot index must be between ' .. MIN_SLOT_IDX .. ' and ' .. MAX_SLOT_IDX .. '.')
-            return true
-        end
-        
-        local pose_arg = args[2]
-        local pose_id = nil
-        
-        local num = tonumber(pose_arg)
-        if num ~= nil then
-            local pose = _G.StrikeAPose:get_pose(num)
-            if pose == nil then
-                djui_chat_message_create('Pose with ID ' .. num .. ' does not exist.')
-                return true
-            end
-            pose_id = num
-        else
-            local found = nil
-            for id, pose in ipairs(_G.StrikeAPose:list_poses()) do
-                if pose.name == pose_arg then
-                    found = id
-                    break
-                end
-            end
-            if found == nil then
-                djui_chat_message_create('Pose with name "' .. pose_arg .. '" not found.')
-                return true
-            end
-            pose_id = found
-        end
-        
-        local success = SavePoseSlot(slot_idx, pose_id)
-        if success then
-            djui_chat_message_create('Pose slot ' .. slot_idx .. ' set to pose ID ' .. pose_id .. ' successfully.')
-        else
-            djui_chat_message_create('Failed to save pose slot ' .. slot_idx .. '. Check console logs.')
+BCC.hook_better_chat_command('sap-slot',
+    'Bind a pose to a quick slot. Example: /sap-slot 0,5  |  /sap-slot 0, Walking',
+    {
+        { "slot", BCC.CMD_ARG_INTEGER, min = MIN_SLOT_IDX, max = MAX_SLOT_IDX },
+        { "pose", BCC.CMD_ARG_STRING_REST },
+    },
+    function(args)
+        if not sap_available() then
+            BCC.chat_create_error('Strike-A-Pose system not found.')
+            return
         end
 
-        return true
+        local pose_id, err = resolve_pose(args.pose)
+        if not pose_id then
+            BCC.chat_create_error(err)
+            return
+        end
+
+        local success = SavePoseSlot(args.slot, pose_id)
+        if success then
+            BCC.chat_create_success('Pose slot ' .. args.slot ..
+                ' set to pose ID ' .. pose_id .. '.')
+        else
+            BCC.chat_create_error('Failed to save pose slot ' ..
+                args.slot .. '. Check console logs.')
+        end
+    end
+)
+
+BCC.hook_better_chat_command('sap-hidecurrent',
+    'Toggle "Current Pose" text on HUD.',
+    {},
+    function()
+        SAP_HideCurrentText = not (SAP_HideCurrentText or false)
+        mod_storage_save_bool("sap_hide_current_text", SAP_HideCurrentText)
+        BCC.chat_create_success("Current pose text " ..
+            (SAP_HideCurrentText and "hidden" or "shown"))
     end
 )

@@ -22,12 +22,12 @@ local SELECTION_ANIM_MAX = 15
 local last_selection_key = nil
 local was_show_panel = false
 
-local RIPPLE_DELAY_PER_CELL = 1.2
+local RIPPLE_DELAY_PER_CELL = 0.6
 local RIPPLE_FADE_FRAMES = 5
 local PAGE_SLIDE_AMOUNT = 40
 
 local CIRCLE_HOP_HEIGHT = 12
-local CIRCLE_HOP_FRAMES = 18
+local CIRCLE_HOP_FRAMES = 14
 
 local COL_PANEL_BG = { 22, 24, 32, 210 }
 local COL_PANEL_BORDER = { 120, 130, 160, 180 }
@@ -45,16 +45,6 @@ local function set_color(c, alpha_mul, rgb_mul)
     local b = math.min(255, math.floor(c[3] * rgb_mul))
     local a = math.max(0, math.min(255, math.floor(c[4] * alpha_mul)))
     djui_hud_set_color(r, g, b, a)
-end
-
-local function get_panel_type()
-    if (SelectedCellDisplayMode or 1) == 0 then return "rect" end
-    return "circle"
-end
-
-local function get_cell_text_type()
-    if (SelectedTextDisplayMode or 1) == 0 then return 'id' end
-    return "name"
 end
 
 local function is_slot_set(i)
@@ -166,10 +156,7 @@ local function draw_cell(x, y, size, state, display_text, text_scale, alpha_mul,
     draw_cell_text(x, y, size, display_text, text_scale, COL_TEXT_WHITE, alpha_mul)
 end
 
-local function cell_display_text(pose_idx, cell_text_type)
-    if cell_text_type == "id" then
-        return tostring(pose_idx)
-    end
+local function cell_display_name(pose_idx)
     local p = _G.StrikeAPose and _G.StrikeAPose:get_pose(pose_idx)
     return (p and p.name) or "?"
 end
@@ -372,9 +359,6 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND, function()
         if pose then current_pose_name = pose.name:gsub("\n", "") end
     end
 
-    local panel_type = get_panel_type()
-    local cell_text_type = get_cell_text_type()
-
     local page_size
     if current_page == 0 then
         page_size = POSES_SLOTS
@@ -385,24 +369,12 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND, function()
         if page_size < 0 then page_size = 0 end
     end
 
-    local text_scale = 0.5
-    local text = "Current Pose: " .. current_pose_name
-
-    local text_y
-    if panel_type == "rect" then
-        local poses_per_line = 8
-        local num_lines = math.ceil(page_size / poses_per_line)
-        if num_lines < 1 then num_lines = 1 end
-        local line_height = CELL_SIZE + 2 * PANEL_MARGIN
-        local panel_top = screen_height - BOTTOM_MARGIN - line_height * num_lines
-
-        local closed_y = screen_height - BOTTOM_MARGIN - 32
-        local open_y   = panel_top - 32
-        text_y = closed_y + (open_y - closed_y) * panel_alpha
-    else
-        text_y = screen_height - BOTTOM_MARGIN - 32
+    if not SAP_HideCurrentText then
+        local text_scale = 0.5
+        local text = "Current Pose: " .. current_pose_name
+        local text_y = screen_height - BOTTOM_MARGIN - 32
+        draw_text_centered(text, screen_width / 2, text_y, text_scale, COL_TEXT_WHITE, 1)
     end
-    draw_text_centered(text, screen_width / 2, text_y, text_scale, COL_TEXT_WHITE, 1)
 
     if panel_alpha <= 0.01 then return end
 
@@ -429,112 +401,53 @@ hook_event(HOOK_ON_HUD_RENDER_BEHIND, function()
             COL_TEXT_WHITE, panel_alpha)
     end
 
-    if panel_type == "rect" then
-        local poses_per_line = 8
-        local total_slots_width = CELL_SIZE * poses_per_line
-        local panel_width = total_slots_width + GAP * (poses_per_line + 1) + 2 * PANEL_MARGIN
-        local panel_x = (screen_width - panel_width) / 2
+    local center_x = screen_width / 2
+    local center_y = screen_height / 2 + page_slide_y
 
-        local num_lines   = math.ceil(page_size / poses_per_line)
-        if num_lines < 1 then num_lines = 1 end
-        local line_height = CELL_SIZE + 2 * PANEL_MARGIN
+    if page_size > 0 then
+        local radius = math.min(screen_width, screen_height) / 3.2
+        local panel_size = 2 * radius + CELL_SIZE + 2 * PANEL_MARGIN
+        local panel_x = center_x - panel_size / 2
+        local panel_y = center_y - panel_size / 2
 
-        for line = 0, num_lines - 1 do
-            local line_y = screen_height - BOTTOM_MARGIN - line_height * (line + 1)
-                            + panel_slide + page_slide_y
+        local pose_circle = get_texture_info("pose_circle")
+        set_color(COL_PANEL_BG, panel_alpha)
+        djui_hud_render_texture(pose_circle,
+            panel_x, panel_y,
+            0.7144 * panel_size / 731.625,
+            0.7144 * panel_size / 731.625)
 
-            set_color(COL_PANEL_BG, panel_alpha)
-            djui_hud_render_rect(panel_x, line_y, panel_width, line_height)
+        for i = 0, page_size - 1 do
+            local angle  = (i / page_size) * 2 * math.pi - math.pi / 2
+            local cell_x = center_x + radius * math.cos(angle) - CELL_SIZE / 2
+            local cell_y = center_y + radius * math.sin(angle) - CELL_SIZE / 2
 
-            set_color(COL_PANEL_BORDER, panel_alpha)
-            djui_hud_render_rect(panel_x, line_y, panel_width, 1)
-            djui_hud_render_rect(panel_x, line_y + line_height - 1, panel_width, 1)
-            djui_hud_render_rect(panel_x, line_y, 1, line_height)
-            djui_hud_render_rect(panel_x + panel_width - 1, line_y, 1, line_height)
+            local hop = circle_hop(i)
+            cell_y = cell_y - hop
 
-            for col = 0, poses_per_line - 1 do
-                local slot_index = line * poses_per_line + col
-                if slot_index >= page_size then break end
+            local state = "normal"
+            local display_text = ""
 
-                local slot_x = panel_x + PANEL_MARGIN + col * (CELL_SIZE + GAP) + GAP
-                local slot_y = line_y + PANEL_MARGIN
-
-                local state = "normal"
-                local display_text = ""
-
-                if current_page == 0 then
-                    local pose_idx = GetPoseSlot(slot_index) or 0
-                    if pose_idx == 0 then
-                        state = "empty"
-                    else
-                        if slot_index == cur_pose_slot then state = "selected" end
-                        display_text = cell_display_text(pose_idx, cell_text_type)
-                    end
+            if current_page == 0 then
+                local pose_idx = GetPoseSlot(i) or 0
+                if pose_idx == 0 then
+                    state = "empty"
                 else
-                    local global_idx = (current_page - 1) * POSES_PER_PAGE + slot_index + 1
-                    if global_idx <= total_poses then
-                        if global_idx == selected_all_pose_idx then state = "selected" end
-                        display_text = cell_display_text(global_idx, cell_text_type)
-                    end
+                    if i == cur_pose_slot then state = "selected" end
+                    display_text = cell_display_name(pose_idx)
                 end
-
-                local cell_alpha = panel_alpha * ripple_alpha(slot_index)
-                if cell_alpha > 0.01 then
-                    draw_cell(slot_x, slot_y, CELL_SIZE, state, display_text,
-                        0.4, cell_alpha, sel_pop)
+            else
+                local global_idx = (current_page - 1) * POSES_PER_PAGE + i + 1
+                if global_idx <= total_poses then
+                    if global_idx == selected_all_pose_idx then state = "selected" end
+                    display_text = cell_display_name(global_idx)
                 end
             end
-        end
 
-    elseif panel_type == "circle" then
-        local center_x = screen_width / 2
-        local center_y = screen_height / 2 + page_slide_y
-
-        if page_size > 0 then
-            local radius = math.min(screen_width, screen_height) / 3.2
-            local panel_size = 2 * radius + CELL_SIZE + 2 * PANEL_MARGIN
-            local panel_x = center_x - panel_size / 2
-            local panel_y = center_y - panel_size / 2
-
-            local pose_circle = get_texture_info("pose_circle")
-            set_color(COL_PANEL_BG, panel_alpha)
-            djui_hud_render_texture(pose_circle,
-                panel_x, panel_y,
-                0.7144 * panel_size / 731.625,
-                0.7144 * panel_size / 731.625)
-
-            for i = 0, page_size - 1 do
-                local angle  = (i / page_size) * 2 * math.pi - math.pi / 2
-                local cell_x = center_x + radius * math.cos(angle) - CELL_SIZE / 2
-                local cell_y = center_y + radius * math.sin(angle) - CELL_SIZE / 2
-
-                local hop = circle_hop(i)
-                cell_y = cell_y - hop
-
-                local state = "normal"
-                local display_text = ""
-
-                if current_page == 0 then
-                    local pose_idx = GetPoseSlot(i) or 0
-                    if pose_idx == 0 then
-                        state = "empty"
-                    else
-                        if i == cur_pose_slot then state = "selected" end
-                        display_text = cell_display_text(pose_idx, cell_text_type)
-                    end
-                else
-                    local global_idx = (current_page - 1) * POSES_PER_PAGE + i + 1
-                    if global_idx <= total_poses then
-                        if global_idx == selected_all_pose_idx then state = "selected" end
-                        display_text = cell_display_text(global_idx, cell_text_type)
-                    end
-                end
-
-                local cell_alpha = panel_alpha * ripple_alpha(i)
-                if cell_alpha > 0.01 then
-                    draw_cell(cell_x, cell_y, CELL_SIZE, state, display_text,
-                        0.4, cell_alpha, sel_pop)
-                end
+            local cell_alpha = panel_alpha * ripple_alpha(i)
+            if cell_alpha > 0.01 then
+                draw_cell(cell_x, cell_y, CELL_SIZE, state, display_text,
+                    0.4, cell_alpha, sel_pop)
             end
         end
     end
